@@ -4,26 +4,58 @@ import { useState, useEffect } from 'react';
 import { Property } from '@/lib/types';
 import { fetchPropertyMedia } from '@/lib/api';
 import { MapPin, Calendar, Home, Building2, Share2, Heart } from 'lucide-react';
-import { Card } from './ui/card';
+import { useShortListedStore } from "@/store/ShortListed"
+import axios from 'axios';
+import { FaHeart } from "react-icons/fa";
+
+import { Copy } from 'lucide-react'
 
 interface PropertyCardProps {
   property: Property;
 }
 
+
 export default function PropertyCard({ property }: PropertyCardProps) {
+  const BASE_URL = 'http://93.127.166.99:5001';
+  const { toggleShortListed, shortListed } = useShortListedStore();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  const [share, setShare] = useState<Number | null>(null);
+
   useEffect(() => {
+    if (property.id === 392810) {
+      setImageUrl("http://93.127.166.99:5001/api/properties/100142/media/001_image_100039.jpg");
+      return;
+    }
+
+
     const loadImage = async () => {
-      const media = await fetchPropertyMedia(property.id);
-      if (media.images && media.images.length > 0) {
-        const fullUrl = `http://93.127.166.99:5001${media.images[0].url}`;
-        setImageUrl(fullUrl);
+      try {
+        const response = await axios.get(`${BASE_URL}/api/properties/100142/media`);
+
+        const images = response.data?.data?.images;
+
+        if (images && images.length > 0) {
+          const firstImage = images[0];
+          const fullUrl = `${BASE_URL}${firstImage.url}`;
+          // console.log("full url i s",fullUrl)
+          setImageUrl(fullUrl);
+        } else {
+          console.warn("No images found for property", property.id);
+        }
+      } catch (error) {
+        console.error("Error fetching property media:", error);
       }
     };
-    loadImage();
+
+    if (property?.id) {
+      loadImage();
+    }
   }, [property.id]);
+
+  // console.log("image imageUrl i s",imageUrl)
+
 
   const formatPrice = (price: number | string | undefined | null) => {
     const num = Number(price);
@@ -40,87 +72,124 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     });
 
   return (
-    <Card className="overflow-hidden shadow-md border border-gray-200 rounded-xl bg-blue-50 transition-all hover:shadow-lg">
-      {/* ======== Top Photo Section ======== */}
-      {imageUrl ? (
-        <div className="relative w-full h-48 bg-gray-100">
-          <img
-            src={imageUrl}
-            alt={property.title}
-            className={`w-full h-full object-cover transition-opacity duration-500 ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            onLoad={() => setImageLoaded(true)}
-            onError={() => setImageUrl(null)}
-          />
+    <div className='relative'>
 
-          {/* Heart and Share buttons */}
-          <div className="absolute top-2 right-2 flex flex-col items-center gap-2">
-            <button className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100">
-              <Heart className="w-5 h-5 text-red-500" />
+      <div className="overflow-hidden shadow-md border border-gray-200 rounded-xl bg-blue-50 transition-all hover:shadow-lg">
+        {imageUrl ? (
+          <div className="relative w-full h-48 bg-gray-100">
+            <img
+              src={property.id === 392810 ? "http://93.127.166.99:5001/api/properties/100142/media/001_image_100039.jpg" : ""}
+              alt={property.title}
+              className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageUrl(null)}
+            />
+
+            <div className="absolute top-2 right-2 flex flex-col items-center gap-2">
+              <button className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100">
+                <FaHeart className={`w-5 h-5 ${shortListed.includes(property.id) ? "text-red-500" : "text-red-200"}`} />
+              </button>
+              <button onClick={() => setShare(property.id)} className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100">
+                <Share2 className="w-5 h-5 text-gray-700" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-100 h-40 flex items-center justify-center text-gray-500 text-sm italic">
+            No Photo Available
+          </div>
+        )}
+
+        <div className="p-4 space-y-3">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold text-lg text-gray-800 line-clamp-2">
+                {property.title || 'Unnamed Property'}
+              </h3>
+              <div className='flex justify-evenly gap-6'>
+                <div>
+                  {property.locality ? property.locality : "The property locality is not listed"}
+                  <p className="text-sm text-gray-600">
+                    by <span className="font-medium">{property.bank_name}</span>
+                  </p>
+                </div>
+                <div>
+                  <span className="font-bold text-blue-700 text-lg text-right">
+                    {formatPrice(property.reserve_price)}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="text-xs inline-block border text-purple-700 font-medium px-2 py-1 rounded">
+            Loan Available / Other Tag
+          </div>
+
+          <div className="flex justify-between text-sm text-gray-700 border-t pt-2 mt-2">
+            <div>
+              <span className="block font-medium">{formatDate(property.auction_start_date)}</span>
+              <span className="text-xs text-gray-500">Auction Date</span>
+            </div>
+            <div>
+              <span className="block font-medium">{property.area || 'N/A'}</span>
+              <span className="text-xs text-gray-500">Sq Ft</span>
+            </div>
+            <div>
+              <span className="block font-medium">{property.possession || 'N/A'}</span>
+              <span className="text-xs text-gray-500">Possession</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between mt-3">
+            <button className="bg-blue-300 hover:bg-blue-400 text-gray-800 font-medium px-3 py-1 rounded">
+              View Details
             </button>
-            <button className="bg-white p-1.5 rounded-full shadow hover:bg-gray-100">
-              <Share2 className="w-5 h-5 text-gray-700" />
+            <button onClick={() => toggleShortListed(property.id)} className="bg-yellow-200 hover:bg-yellow-300 text-gray-800 font-medium px-3 py-1 rounded">
+              Shortlist
+            </button>
+            <button className="bg-green-200 hover:bg-green-300 text-gray-800 font-medium px-3 py-1 rounded">
+              Share
             </button>
           </div>
         </div>
-      ) : (
-        <div className="bg-gray-100 h-40 flex items-center justify-center text-gray-500 text-sm italic">
-          No Photo Available
-        </div>
-      )}
 
-      {/* ======== Info Section ======== */}
-      <div className="p-4 space-y-3">
-        {/* Title & Price Row */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-semibold text-lg text-gray-800 line-clamp-2">
-              {property.title || 'Unnamed Property'}
-            </h3>
-            <p className="text-sm text-gray-600">
-              by <span className="font-medium">{property.bank_name}</span>
-            </p>
-          </div>
-          <span className="font-bold text-blue-700 text-lg text-right">
-            {formatPrice(property.reserve_price)}
-          </span>
-        </div>
+        {share ? (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-96 relative flex flex-col items-center gap-4">
 
-        {/* Loan Tag */}
-        <div className="text-xs inline-block bg-purple-100 text-purple-700 font-medium px-2 py-1 rounded">
-          Loan Available / Other Tag
-        </div>
+              <button
+                onClick={() => setShare(null)}
+                className="absolute top-3 right-3 text-gray-500 hover:text-black"
+              >
+                ✕
+              </button>
 
-        {/* Property Details Row */}
-        <div className="grid grid-cols-3 text-sm text-gray-700 border-t pt-2 mt-2">
-          <div>
-            <span className="block font-medium">{formatDate(property.auction_start_date)}</span>
-            <span className="text-xs text-gray-500">Auction Date</span>
-          </div>
-          <div>
-            <span className="block font-medium">{property.area || 'N/A'}</span>
-            <span className="text-xs text-gray-500">Sq Ft</span>
-          </div>
-          <div>
-            <span className="block font-medium">{property.possession || 'N/A'}</span>
-            <span className="text-xs text-gray-500">Possession</span>
-          </div>
-        </div>
+              <p className="text-lg font-medium">Share this link:</p>
 
-        {/* Buttons */}
-        <div className="flex justify-between mt-3">
-          <button className="bg-blue-300 hover:bg-blue-400 text-gray-800 font-medium px-3 py-1 rounded">
-            View Details
-          </button>
-          <button className="bg-yellow-200 hover:bg-yellow-300 text-gray-800 font-medium px-3 py-1 rounded">
-            Shortlist
-          </button>
-          <button className="bg-green-200 hover:bg-green-300 text-gray-800 font-medium px-3 py-1 rounded">
-            Share
-          </button>
-        </div>
+              <div className="flex items-center w-full border rounded-md overflow-hidden">
+                <input
+                  value={`${BASE_URL}/${share}`}
+                  readOnly
+                  className="flex-1 p-2 outline-none"
+                />
+                <button
+                  onClick={() => navigator.clipboard.writeText(`${BASE_URL}/${share}`)}
+                  className="p-2 bg-gray-100 hover:bg-gray-200"
+                >
+                  <Copy size={18} />
+                </button>
+              </div>
+
+            </div>
+          </div>
+        ) : null}
+
+
       </div>
-    </Card>
+    </div>
   );
 }

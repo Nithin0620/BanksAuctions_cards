@@ -30,6 +30,7 @@ export const fetchProperties = async (
       sort_order: sortOrder,
     },
   });
+  console.log("data is,:",response.data);
   return response.data;
 };
 

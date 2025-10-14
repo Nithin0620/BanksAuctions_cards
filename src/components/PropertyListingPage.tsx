@@ -12,6 +12,8 @@ export default function PropertyListingPage() {
     loadProperties();
   }, [loadProperties]);
 
+  // console.log("prossds",properties);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -56,13 +58,11 @@ export default function PropertyListingPage() {
             <PropertyCard
               key={property.id}
               property={property}
-              // className="hover:shadow-xl transition-shadow rounded-2xl"
             />
           ))}
         </div>
       </div>
       <PaginationControls 
-        // className="max-w-7xl mx-auto px-4" 
       />
     </div>
   );
