@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import toast from 'react-hot-toast';
 
 interface PropertyStore {
     shortListed: number[];
@@ -14,8 +15,10 @@ export const useShortListedStore = create<PropertyStore>((set, get) => ({
 
         if (current.includes(id)) {
             updatedList = current.filter((item) => item !== id);
+            toast.success("Item removed from Shortlist");
         } else {
             updatedList = [...current, id];
+            toast.success("Item added to Shortlist");
         }
 
         set({ shortListed: updatedList });

@@ -19,7 +19,7 @@ export const fetchProperties = async (
   page = 1,
   limit = 10,
   sortBy = 'bn_auction_start_date',
-  sortOrder: 'ASC' | 'DESC' = 'DESC'
+  sortOrder: 'ASC' | 'DESC' = 'ASC'
 ) => {
   const response = await api.get('/properties', {
     params: {
